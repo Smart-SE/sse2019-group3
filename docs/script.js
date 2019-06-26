@@ -115,17 +115,15 @@ mapElement.callReserve = function(id, lat, lon){
         }
     }))
 }
-let qrcode;
+let routing;
 mapElement.addEventListener("reserve-succeeded", function(e){
     const id = e.detail.id;
     const target = {
         lat: e.detail.lat,
         lon: e.detail.lon
     };
-    if(qrcode !== undefined && qrcode.clear){
-        qrcode.clear();
-    }
-    qrcode = new QRCode(document.getElementById("qrcode"), {
+    $("#qrcode").children().remove();
+    new QRCode(document.getElementById("qrcode"), {
         text: "userid:testuser01, locationid:" + id,
         width: 128,
         height: 128,
@@ -133,7 +131,10 @@ mapElement.addEventListener("reserve-succeeded", function(e){
         colorLight : "#ffffff",
         correctLevel : QRCode.CorrectLevel.H
     });
-    L.Routing.control({
+    if(routing !== undefined){
+        mymap.removeLayer(routing);
+    }
+    routing = L.Routing.control({
        waypoints: [
          L.latLng(currentPosition.lat, currentPosition.lon),
          L.latLng(target.lat, target.lon)
