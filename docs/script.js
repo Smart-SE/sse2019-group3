@@ -11,33 +11,6 @@ const initMap = function(){
     }).addTo(mymap);
     return mymap;
 }
-const addElement = function(){
-    var marker = L.marker([51.5, -0.09]).addTo(mymap);
-    var circle = L.circle([51.508, -0.11], {
-        color: 'red',
-        fillColor: '#f03',
-        fillOpacity: 0.5,
-        radius: 500
-    }).addTo(mymap);
-    var polygon = L.polygon([
-        [51.509, -0.08],
-        [51.503, -0.06],
-        [51.51, -0.047]
-    ]).addTo(mymap);
-    marker.bindPopup("<br>Hello world!</br><br>I am a popup.").openPopup();
-    circle.bindPopup("I am a circle.");
-    polygon.bindPopup("I am a polygon.");
-    var popup = L.popup();
-    
-    function onMapClick(e) {
-        popup
-            .setLatLng(e.latlng)
-            .setContent("You clicked the map at " + e.latlng.toString())
-            .openOn(mymap);
-    }
-    
-    mymap.on('click', onMapClick);
-}
 
 const mymap = initMap();
 
@@ -68,7 +41,7 @@ const createPopupElement = function(item){
     const num = item.num;
     const price = item.price;
     const description = item.description;
-    const onclick = "mapElement.callReserve('" + id + "')";
+    const onclick = "mapElement.callReserve('" + id + "','" + lat + "','" + lon + "')";
     return "<br>名前:" + name + "</br>" +
     "<br>緯度:" + lat + "</br>" +
     "<br>経度:" + lon + "</br>" +
@@ -90,46 +63,103 @@ const addMarkers = function(info){
     }
 }
 
-const createDummyInfo = function(args){
-    const lat = args[0];
-    const lon = args[1];
-    const DUMMY_NUM = 40;
-    let info = []
-    for( let i = 0; i < DUMMY_NUM; ++i){
-        const latitude = lat + Math.random() * 0.01 - 0.005;
-        const longitude = lon + Math.random() * 0.01 - 0.005;
-        info.push({
-            name: "ダミー" + i,
-            latitude: latitude,
-            longitude: longitude,
-            id: "item000" + i,
-            description:"ダミー",
-            price: "無料",
-            num: Math.round(Math.random() * 20) + 5
-        })
+
+class Server{
+    constructor(){}
+    sendCurrentPosition(lat, lon){
+        const DUMMY_NUM = 40;
+        let info = []
+        for( let i = 0; i < DUMMY_NUM; ++i){
+            const latitude = +lat + Math.random() * 0.01 - 0.005;
+            const longitude = +lon + Math.random() * 0.01 - 0.005;
+            info.push({
+                name: "ダミー" + i,
+                latitude: latitude,
+                longitude: longitude,
+                id: "item000" + i,
+                description:"ダミー",
+                price: "無料",
+                num: Math.round(Math.random() * 20) + 5
+            })
+        }
+        setTimeout(function(){
+            mapElement.dispatchEvent(new CustomEvent("get-marker-info", {
+                detail: info
+            }))
+        }, 1000)
     }
-    mapElement.dispatchEvent(new CustomEvent("get-marker-info", {
-        detail: info
-    }))
+    reserve(id, lat, lon){
+        setTimeout(function(){
+            mapElement.dispatchEvent(new CustomEvent("reserve-succeeded", {
+                detail: {
+                    id: id,
+                    lat: lat,
+                    lon: lon
+                }
+            }))
+        }, 2000);
+    }
+};
+const server = new Server();
+
+let currentPosition = {
+
 }
 
-mapElement.callReserve = function(id){
+mapElement.callReserve = function(id, lat, lon){
     mapElement.dispatchEvent(new CustomEvent("reserve-clicked", {
-        detail: id
+        detail: {
+            id: id,
+            lat: lat,
+            lon: lon
+        }
     }))
 }
-
+let qrcode;
+mapElement.addEventListener("reserve-succeeded", function(e){
+    const id = e.detail.id;
+    const target = {
+        lat: e.detail.lat,
+        lon: e.detail.lon
+    };
+    if(qrcode !== undefined && qrcode.clear){
+        qrcode.clear();
+    }
+    qrcode = new QRCode(document.getElementById("qrcode"), {
+        text: "userid:testuser01, locationid:" + id,
+        width: 128,
+        height: 128,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
+    L.Routing.control({
+       waypoints: [
+         L.latLng(currentPosition.lat, currentPosition.lon),
+         L.latLng(target.lat, target.lon)
+       ]
+     }).addTo(mymap);
+    $('#reserveSucceededModal').modal()
+});
 mapElement.addEventListener("reserve-clicked", function(e){
-    const id = e.detail;
-    console.log(id);
+    const result = confirm("予約しますか？");
+    if(result){
+        const id = e.detail.id;
+        const lat = +e.detail.lat;
+        const lon = +e.detail.lon
+        server.reserve(id, lat, lon);
+    }
 })
 
 mapElement.addEventListener("get-current-position", function(e){
-    console.log(e.detail)
     const lat = +e.detail.lat;
     const lon = +e.detail.lon;
+    currentPosition = {
+        lat: lat,
+        lon: lon
+    }
     mymap.setView([ lat,lon ]);
-    setTimeout(createDummyInfo, 1000, [lat, lon]);
+    server.sendCurrentPosition(lat, lon);
 })
 
 mapElement.addEventListener("get-marker-info", function(e){
