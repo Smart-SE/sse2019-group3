@@ -139,6 +139,9 @@ mapElement.callReserve = function(id, lat, lon){
 }
 
 const $displayQRButton = $("#display-qr-button");
+$displayQRButton.on("click", function(){
+    $('#reserveSucceededModal').modal();
+})
 mapElement.addEventListener("remove-reservation-succeeded", function(e){
     $displayQRButton.removeClass("btn-primary").addClass("btn-secondary").attr("disabled", "disabled");
 });
