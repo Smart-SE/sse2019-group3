@@ -1,1 +1,13 @@
-#mapid { height: 1000px; }
+html, body{
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#body{
+    height: calc(100% - 56px);
+}
+#mapid{
+    height: 100%;
+}
