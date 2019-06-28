@@ -63,9 +63,22 @@ const addMarkers = function(info){
     }
 }
 
+const $loading = $("#loading");
+const showLoading = function(){
+    $loading.show();
+};
+const hideLoading = function(){
+    $loading.hide();
+}
 
 class Server{
     constructor(){}
+    login(id, password){
+        const DUMMY_USERNAME = "テストユーザ0001";
+        mapElement.dispatchEvent(new CustomEvent("login-succeeded", {
+            detail: DUMMY_USERNAME
+        }))
+    }
     sendCurrentPosition(lat, lon){
         const DUMMY_NUM = 40;
         let info = []
@@ -99,6 +112,15 @@ class Server{
             }))
         }, 2000);
     }
+    removeReservation(){
+        setTimeout(function(){
+            mapElement.dispatchEvent(new CustomEvent("remove-reservation-succeeded", {
+                detail: {
+                    id: id
+                }
+            }))
+        }, 2000);
+    }
 };
 const server = new Server();
 
@@ -115,6 +137,12 @@ mapElement.callReserve = function(id, lat, lon){
         }
     }))
 }
+
+const $displayQRButton = $("#display-qr-button");
+mapElement.addEventListener("remove-reservation-succeeded", function(e){
+    $displayQRButton.removeClass("btn-primary").addClass("btn-secondary").attr("disabled", "disabled");
+});
+
 let routing;
 mapElement.addEventListener("reserve-succeeded", function(e){
     const id = e.detail.id;
@@ -140,7 +168,9 @@ mapElement.addEventListener("reserve-succeeded", function(e){
          L.latLng(target.lat, target.lon)
        ]
      }).addTo(mymap);
-    $('#reserveSucceededModal').modal()
+     hideLoading();
+    $('#reserveSucceededModal').modal();
+    $displayQRButton.removeClass("btn-secondary").addClass("btn-primary").removeAttr("disabled");
 });
 mapElement.addEventListener("reserve-clicked", function(e){
     const result = confirm("予約しますか？");
@@ -148,6 +178,7 @@ mapElement.addEventListener("reserve-clicked", function(e){
         const id = e.detail.id;
         const lat = +e.detail.lat;
         const lon = +e.detail.lon
+        showLoading();
         server.reserve(id, lat, lon);
     }
 })
@@ -161,6 +192,7 @@ mapElement.addEventListener("get-current-position", function(e){
     }
     mymap.setView([ lat,lon ]);
     server.sendCurrentPosition(lat, lon);
+    hideLoading();
 })
 
 mapElement.addEventListener("get-marker-info", function(e){
@@ -168,4 +200,10 @@ mapElement.addEventListener("get-marker-info", function(e){
     addMarkers(info);
 })
 
-getPosition()
+mapElement.addEventListener("login-succeeded", function(e){
+    const username = e.detail;
+    $("#user-name").text(username);
+    getPosition()
+})
+
+server.login();

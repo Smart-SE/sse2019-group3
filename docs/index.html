@@ -21,10 +21,14 @@
 </head>
 <body>
                 <nav class="navbar navbar-light bg-light">
-                                <span class="navbar-text">
-                                  Navbar text with an inline element
-                                </span>
-                              </nav>
+                        <span class="navbar-text">
+                                トイレ検索・予約システム
+                        </span>
+                        <button id="display-qr-button" type="button" class="btn btn-secondary" disabled>予約済のQRコード表示</button>
+                        <span class="navbar-text">ユーザ名：</span>
+                        <span class="navbar-text" id="user-name"></span>
+                        <img id="user-icon" src="https://dummyimage.com/30x30/000/fff">
+                </nav>
                 <div id="body">
                         <div id="mapid"></div>
                 </div>
@@ -39,6 +43,7 @@
                 </button>
                 </div>
                 <div class="modal-body">
+                  <div><span>現地でこのQRコードをかざして下さい</span></div>
                 　<div id="qrcode"></div>
                 </div>
                 <div class="modal-footer">
@@ -46,6 +51,12 @@
                 </div>
                 </div>
         </div>
+</div>
+<!-- spinner-->
+<div id="loading">
+                <div class="spinner-border text-light" role="status">
+                  <span class="sr-only">Loading...</span>
+                </div>
 </div>
 <script src="script.js"></script>
 </body>
