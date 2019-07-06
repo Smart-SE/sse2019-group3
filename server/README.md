@@ -22,6 +22,15 @@ curl http://13.112.165.3:3000/freq?tid=eq.1 -X PATCH
       -d "{\"freq\": 0}"
 上記は、freqテーブルのtid=1のレコードのfreqカラムを0(青)に変更するコマンド。
 
+●条件に一致したらDELETE
+export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoidG9kb191c2VyIn0.NwfY6l1JIzSIj4fYWuaLWmlR1uDCYF0DqsZll0JHUHs
+(windowsならSET)
+curl http://13.112.165.3:3000/freq?tid=eq.1 -X DELETE
+      -H "Authorization: Bearer $TOKEN"
+      -H "Content-Type: application/json"
+
+上記は、freqテーブルのtid=1のレコードの削除
+
 (追記ここまで)
 ●サーバ構造
 - PostgreSQL、PostgreRESTにより構築
