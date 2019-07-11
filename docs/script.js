@@ -203,7 +203,7 @@ class Server{
             mapElement.dispatchEvent(new CustomEvent("login-succeeded", {
                 detail: DEMO_USERNAME
             }))
-            setInterval(updateFreq, 10000)
+            setInterval(updateFreq, 1000000)
         })
         .fail(function(data){
             console.log(data);
@@ -352,4 +352,33 @@ done((data) => {
 .fail((data) =>{
     console.log(data)
 })
+*/
+/*
+$.ajax({
+    type:"POST",
+    url: "http://13.112.165.3:3000/account",
+    dataType: "json",
+    contentType: "application/json",
+    data: JSON.stringify({
+        hid: 100,
+        password: "newpassword"
+    }),
+    beforeSend: function( xhr, settings ) {
+         xhr.setRequestHeader( 'Authorization', `Bearer ${DEMO_POST_TOKEN}`);
+    },
+}).
+done((data) => {
+    console.log(data);
+    $.ajax({
+        timeout:5000,
+        type:"get",
+        url: "http://13.112.165.3:3000/account"
+    }).
+    done((data) => {
+        console.log(data);
+    })
+})
+.fail(function(data){
+    console.log(data);
+});
 */
