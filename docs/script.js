@@ -188,11 +188,14 @@ const getToiletLocations = function(lat, lon){
 }
 
 class Server{
-    constructor(){}
-    markers = [];
-    locations = [];
+    constructor(){
+        this.markers = [];
+        this.locations = [];
+        this.id = null;
+    }
     login(id, password){
         $.ajax({
+            timeout:5000,
             type:"get",
             url: "http://13.112.165.3:3000/account?hid=eq." + id + "\&password=eq." + password
         }).
@@ -202,11 +205,15 @@ class Server{
             }))
             setInterval(updateFreq, 10000)
         })
+        .fail(function(data){
+            console.log(data);
+        });
     }
     sendCurrentPosition(lat, lon){
         getToiletLocations(lat, lon);
     }
     reserve(id, lat, lon){
+        this.id = id;
         setTimeout(function(){
             mapElement.dispatchEvent(new CustomEvent("reserve-succeeded", {
                 detail: {
@@ -218,11 +225,10 @@ class Server{
         }, 2000);
     }
     removeReservation(){
+        this.id = null;
         setTimeout(function(){
             mapElement.dispatchEvent(new CustomEvent("remove-reservation-succeeded", {
-                detail: {
-                    id: id
-                }
+                detail: {}
             }))
         }, 2000);
     }
@@ -247,8 +253,19 @@ const $displayQRButton = $("#display-qr-button");
 $displayQRButton.on("click", function(){
     $('#reserveSucceededModal').modal();
 })
+
+const $deReserveButton = $("#de-reserve-button");
+$deReserveButton.on("click", function(){
+    const result = confirm("予約解除しますか？");
+    if(result){
+        server.removeReservation();
+    }
+})
+
 mapElement.addEventListener("remove-reservation-succeeded", function(e){
+    confirm("予約解除しました");
     $displayQRButton.removeClass("btn-primary").addClass("btn-secondary").attr("disabled", "disabled");
+    $deReserveButton.removeClass("btn-primary").addClass("btn-secondary").attr("disabled", "disabled");
 });
 
 let routing;
@@ -279,6 +296,8 @@ mapElement.addEventListener("reserve-succeeded", function(e){
      hideLoading();
     $('#reserveSucceededModal').modal();
     $displayQRButton.removeClass("btn-secondary").addClass("btn-primary").removeAttr("disabled");
+    $deReserveButton.removeClass("btn-secondary").addClass("btn-primary").removeAttr("disabled");
+
 });
 mapElement.addEventListener("reserve-clicked", function(e){
     const result = confirm("予約しますか？");
