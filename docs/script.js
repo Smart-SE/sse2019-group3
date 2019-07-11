@@ -1,5 +1,9 @@
 const mapid = "mapid";
 const mapElement = document.getElementById(mapid);
+const DEMO_USERNAME = "テストユーザ0001";
+const DEMO_USER_HID = 2;
+const DEMO_USER_PASSWORD = "root";
+const DEMO_POST_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoidG9kb191c2VyIn0.NwfY6l1JIzSIj4fYWuaLWmlR1uDCYF0DqsZll0JHUHs";
 
 const initMap = function(){
     const mymap = L.map(mapid).setView([51.505, -0.09], 16);
@@ -26,42 +30,97 @@ const getPosition = function(){
 }
 
 
-let markers = [];
 const removeMarkers = function(){
+    const markers = server.markers;
     for(let i = 0, imax = markers.length; i < imax; ++i){
         mymap.removeLayer(markers[i]);
     }
-    markers = [];
+    server.markers = [];
+}
+
+const getRowString = function(name, value, style){
+    if(style == null)  return "<tr><th>" + name + "</th><th>" + value + "</th></tr>";
+    return "<tr style='" + style + "'><th>" + name + "</th><th>" + value + "</th></tr>";
+}
+
+const getSex = function(sex){
+    if(sex == 1) return "男のみ";
+    if(sex == 2) return "女のみ";
+    return "男女"
+}
+
+const getFreqColor = function(freq){
+    if(freq == 1) return "yellow";
+    if(freq == 2) return "red";
+    return "blue";
+}
+
+const getFreqMessage = function(freq){
+    if(freq == 1) return "中";
+    if(freq == 2) return "高";
+    return "低";
 }
 
 const createPopupElement = function(item){
+    const name = item.name;
     const lat = item.latitude;
     const lon = item.longitude;
     const id = item.id;
-    const num = item.num;
-    const price = item.price;
-    const description = item.description;
+    const current_num = item.current_num;
+    const max_num = item.max_num;
+    const fee = item.fee;
+    const address = item.address;
+    const date = item.date;
+    const freq = item.freq;
+    const sex = item.sex;
+    const color = getFreqColor(freq);
     const onclick = "mapElement.callReserve('" + id + "','" + lat + "','" + lon + "')";
-    return "<br>名前:" + name + "</br>" +
-    "<br>緯度:" + lat + "</br>" +
-    "<br>経度:" + lon + "</br>" +
-    "<br>設置数:" + num + "</br>" +
-    "<br>説明:" + description + "</br>" +
-    "<br>価格:" + price + "</br>" +
-    "<button onClick=" + onclick + ">予約</button>" 
+    return "<div><table class='table'>" +
+                "<tbody>" +
+                getRowString("名前", name) +
+                getRowString("階層", address + "F") +
+                getRowString("使用頻度",  getFreqMessage(freq), "color:" + color) +
+                getRowString("種別", getSex(sex)) +
+                getRowString("予約数", current_num) +
+                getRowString("最大数", max_num) +
+                getRowString("価格", fee + "円") +
+                getRowString("更新時刻", date) +
+                "</tbody>" +
+            "</table></div>" +
+            "<div><button  class='btn btn-primary' onClick=" + onclick + ">予約</button></div>" ;
 }
 
-const addMarkers = function(info){
+const addMarkers = function(){
+    const info = server.locations;
     for(let i = 0, imax = info.length; i < imax; ++i){
         const item = info[i];
+        const id = item.id;
         const lat = item.latitude;
         const lon = item.longitude;
         const element = createPopupElement(item);
         const marker = L.marker([lat, lon]).addTo(mymap)
         .bindPopup(element);
-        markers[i] = marker
+        server.markers[id] = marker
     }
 }
+
+const updateFreq = function(){
+    $.ajax({
+        type:"get",
+        url: "http://13.112.165.3:3000/freq"
+    })
+    .done(function(result){
+        for(let i = 0, imax = result.length; i < imax; ++i){
+            const data = result[i];
+            const tid = data.tid;
+            const item = server.locations[tid];
+            item.freq = data.freq;
+            item.date = new Date().toLocaleString();
+            server.markers[tid]._popup.setContent(createPopupElement(item));
+        }
+    })
+}
+
 
 const $loading = $("#loading");
 const showLoading = function(){
@@ -71,35 +130,81 @@ const hideLoading = function(){
     $loading.hide();
 }
 
+const getToiletLocations = function(lat, lon){
+    {
+        $.when(
+            $.ajax({
+                type:"get",
+                url: "http://13.112.165.3:3000/toilet_pos"
+            }),
+            $.ajax({
+                type:"get",
+                url: "http://13.112.165.3:3000/environment"
+            }),
+            $.ajax({
+                type:"get",
+                url: "http://13.112.165.3:3000/freq"
+            }),
+            $.ajax({
+                type:"get",
+                url: "http://13.112.165.3:3000/reserve_toilet"
+            }),
+        )
+        .done((pos, environment, freq, reserve) => {
+            let info = [];
+            for( let i = 0, imax = pos[0].length; i < imax; ++i){
+                const item = pos[0][i];
+                info.push({
+                    name: "トイレ" + item.tid,
+                    latitude: item.longitude, /* 7/11 10:38時点でDB格納のダミーデータで緯度、経度が逆転しているため*/
+                    longitude: item.latitude,/* 7/11 10:38時点でDB格納のダミーデータで緯度、経度が逆転しているため*/
+                    id: item.tid,
+                    address: item.address,
+                    date: new Date().toLocaleString()
+                })
+            }
+            for( let i = 0, imax = environment[0].length; i < imax; ++i){
+                const item = environment[0][i]
+                const tid = item.tid;
+                info[tid].room = item.room;
+                info[tid].sex = item.sex;
+                info[tid].fee = item.fee;
+            }
+            for( let i = 0, imax = freq[0].length; i < imax; ++i){
+                const item = freq[0][i]
+                const tid = item.tid;
+                info[tid].freq = item.freq;
+            }
+            for( let i = 0, imax = reserve[0].length; i < imax; ++i){
+                const item = reserve[0][i]
+                const tid = item.tid;
+                info[tid].current_num = item.current_num;
+                info[tid].max_num = item.max_num;
+            }
+            server.locations = info;
+            addMarkers();
+        })
+    }
+}
+
 class Server{
     constructor(){}
+    markers = [];
+    locations = [];
     login(id, password){
-        const DUMMY_USERNAME = "テストユーザ0001";
-        mapElement.dispatchEvent(new CustomEvent("login-succeeded", {
-            detail: DUMMY_USERNAME
-        }))
+        $.ajax({
+            type:"get",
+            url: "http://13.112.165.3:3000/account?hid=eq." + id + "\&password=eq." + password
+        }).
+        done((data) => {
+            mapElement.dispatchEvent(new CustomEvent("login-succeeded", {
+                detail: DEMO_USERNAME
+            }))
+            setInterval(updateFreq, 10000)
+        })
     }
     sendCurrentPosition(lat, lon){
-        const DUMMY_NUM = 40;
-        let info = []
-        for( let i = 0; i < DUMMY_NUM; ++i){
-            const latitude = +lat + Math.random() * 0.01 - 0.005;
-            const longitude = +lon + Math.random() * 0.01 - 0.005;
-            info.push({
-                name: "ダミー" + i,
-                latitude: latitude,
-                longitude: longitude,
-                id: "item000" + i,
-                description:"ダミー",
-                price: "無料",
-                num: Math.round(Math.random() * 20) + 5
-            })
-        }
-        setTimeout(function(){
-            mapElement.dispatchEvent(new CustomEvent("get-marker-info", {
-                detail: info
-            }))
-        }, 1000)
+        getToiletLocations(lat, lon);
     }
     reserve(id, lat, lon){
         setTimeout(function(){
@@ -155,7 +260,7 @@ mapElement.addEventListener("reserve-succeeded", function(e){
     };
     $("#qrcode").children().remove();
     new QRCode(document.getElementById("qrcode"), {
-        text: "userid:testuser01, locationid:" + id,
+        text: "userid:" + DEMO_USER_HID + ", locationid:" + id,
         width: 128,
         height: 128,
         colorDark : "#000000",
@@ -198,15 +303,34 @@ mapElement.addEventListener("get-current-position", function(e){
     hideLoading();
 })
 
-mapElement.addEventListener("get-marker-info", function(e){
-    const info = e.detail;
-    addMarkers(info);
-})
 
 mapElement.addEventListener("login-succeeded", function(e){
     const username = e.detail;
     $("#user-name").text(username);
-    getPosition()
+    getPosition();
 })
 
-server.login();
+server.login(DEMO_USER_HID, DEMO_USER_PASSWORD);
+/*
+$.ajax({
+    type:"POST",
+    url: "http://13.112.165.3:3000/reserve_info",
+    dataType: "json",
+    contentType: "application/json",
+    data: JSON.stringify({
+        reserve_id: 11,
+        tid: 2,
+        hid: 4
+    }),
+    beforeSend: function( xhr, settings ) {
+         xhr.setRequestHeader( 'Authorization', `Bearer ${DEMO_POST_TOKEN}`);
+    },
+    setTimeout: 3000
+}).
+done((data) => {
+    console.log(data);
+})
+.fail((data) =>{
+    console.log(data)
+})
+*/
