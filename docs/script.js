@@ -192,6 +192,7 @@ class Server{
         this.markers = [];
         this.locations = [];
         this.id = null;
+        this.reserve_id = null;
     }
     login(id, password){
         $.ajax({
@@ -205,32 +206,75 @@ class Server{
             }))
             setInterval(updateFreq, 1000000)
         })
-        .fail(function(data){
-            console.log(data);
-        });
     }
     sendCurrentPosition(lat, lon){
         getToiletLocations(lat, lon);
     }
     reserve(id, lat, lon){
-        this.id = id;
-        setTimeout(function(){
+        if(this.reserve_id != null){
+            alert("二つ以上予約できません");
+            mapElement.dispatchEvent(new CustomEvent("reserve-failed", {
+                detail: {}
+            }));
+            return;
+        }
+        this.tid = +id;
+        const reserveId = Math.round(Math.random() * 10000);
+        const data = JSON.stringify({
+            reserve_id: reserveId,
+            tid: this.tid,
+            hid: DEMO_USER_HID
+        });
+        $.ajax({
+            type:"POST",
+            url: "http://13.112.165.3:3000/reserve_info",
+            dataType: "json",
+            contentType: "application/json",
+            data: data,
+            beforeSend: function( xhr, settings ) {
+                 xhr.setRequestHeader( 'Authorization', `Bearer ${DEMO_POST_TOKEN}`);
+            },
+            setTimeout: 3000
+        }).
+        done((data) => {
+            this.reserve_id = reserveId;
             mapElement.dispatchEvent(new CustomEvent("reserve-succeeded", {
                 detail: {
-                    id: id,
+                    id: reserveId,
                     lat: lat,
                     lon: lon
                 }
             }))
-        }, 2000);
+        })
+        .fail((data) => {
+            this.reserve_id = reserveId;
+            mapElement.dispatchEvent(new CustomEvent("reserve-succeeded", {
+                detail: {
+                    id: reserveId,
+                    lat: lat,
+                    lon: lon
+                }
+            }))
+        });
     }
     removeReservation(){
-        this.id = null;
-        setTimeout(function(){
+        if(this.reserve_id == null) return;
+        $.ajax({
+            type:"DELETE",
+            url: "http://13.112.165.3:3000/reserve_info?reserve_id=eq." + this.reserve_id,
+            dataType: "json",
+            contentType: "application/json",
+            beforeSend: function( xhr, settings ) {
+                 xhr.setRequestHeader( 'Authorization', `Bearer ${DEMO_POST_TOKEN}`);
+            },
+            setTimeout: 3000
+        }).
+        done((data) => {
+            this.reserve_id = null;
             mapElement.dispatchEvent(new CustomEvent("remove-reservation-succeeded", {
                 detail: {}
             }))
-        }, 2000);
+        })
     }
 };
 const server = new Server();
@@ -264,11 +308,16 @@ $deReserveButton.on("click", function(){
 
 mapElement.addEventListener("remove-reservation-succeeded", function(e){
     confirm("予約解除しました");
+    mymap.closePopup();
+    mymap.removeControl(routing);
     $displayQRButton.removeClass("btn-primary").addClass("btn-secondary").attr("disabled", "disabled");
     $deReserveButton.removeClass("btn-primary").addClass("btn-secondary").attr("disabled", "disabled");
 });
 
 let routing;
+mapElement.addEventListener("reserve-failed", function(e){
+    hideLoading();
+});
 mapElement.addEventListener("reserve-succeeded", function(e){
     const id = e.detail.id;
     const target = {
@@ -285,7 +334,7 @@ mapElement.addEventListener("reserve-succeeded", function(e){
         correctLevel : QRCode.CorrectLevel.H
     });
     if(routing !== undefined){
-        mymap.removeLayer(routing);
+        mymap.removeControl(routing);
     }
     routing = L.Routing.control({
        waypoints: [
@@ -330,55 +379,3 @@ mapElement.addEventListener("login-succeeded", function(e){
 })
 
 server.login(DEMO_USER_HID, DEMO_USER_PASSWORD);
-/*
-$.ajax({
-    type:"POST",
-    url: "http://13.112.165.3:3000/reserve_info",
-    dataType: "json",
-    contentType: "application/json",
-    data: JSON.stringify({
-        reserve_id: 11,
-        tid: 2,
-        hid: 4
-    }),
-    beforeSend: function( xhr, settings ) {
-         xhr.setRequestHeader( 'Authorization', `Bearer ${DEMO_POST_TOKEN}`);
-    },
-    setTimeout: 3000
-}).
-done((data) => {
-    console.log(data);
-})
-.fail((data) =>{
-    console.log(data)
-})
-*/
-/*
-$.ajax({
-    type:"POST",
-    url: "http://13.112.165.3:3000/account",
-    dataType: "json",
-    contentType: "application/json",
-    data: JSON.stringify({
-        hid: 100,
-        password: "newpassword"
-    }),
-    beforeSend: function( xhr, settings ) {
-         xhr.setRequestHeader( 'Authorization', `Bearer ${DEMO_POST_TOKEN}`);
-    },
-}).
-done((data) => {
-    console.log(data);
-    $.ajax({
-        timeout:5000,
-        type:"get",
-        url: "http://13.112.165.3:3000/account"
-    }).
-    done((data) => {
-        console.log(data);
-    })
-})
-.fail(function(data){
-    console.log(data);
-});
-*/
