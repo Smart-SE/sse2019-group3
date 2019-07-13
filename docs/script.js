@@ -107,7 +107,7 @@ const addMarkers = function(){
 const updateFreq = function(){
     $.ajax({
         type:"get",
-        url: "http://13.112.165.3:3000/freq"
+        url: "https://13.112.165.3:443/freq"
     })
     .done(function(result){
         for(let i = 0, imax = result.length; i < imax; ++i){
@@ -135,19 +135,19 @@ const getToiletLocations = function(lat, lon){
         $.when(
             $.ajax({
                 type:"get",
-                url: "http://13.112.165.3:3000/toilet_pos"
+                url: "https://13.112.165.3:443/toilet_pos"
             }),
             $.ajax({
                 type:"get",
-                url: "http://13.112.165.3:3000/environment"
+                url: "https://13.112.165.3:443/environment"
             }),
             $.ajax({
                 type:"get",
-                url: "http://13.112.165.3:3000/freq"
+                url: "https://13.112.165.3:443/freq"
             }),
             $.ajax({
                 type:"get",
-                url: "http://13.112.165.3:3000/reserve_toilet"
+                url: "https://13.112.165.3:443/reserve_toilet"
             }),
         )
         .done((pos, environment, freq, reserve) => {
@@ -198,13 +198,16 @@ class Server{
         $.ajax({
             timeout:5000,
             type:"get",
-            url: "http://13.112.165.3:3000/account?hid=eq." + id + "\&password=eq." + password
+            url: "https://13.112.165.3:443/account?hid=eq." + id + "\&password=eq." + password
         }).
         done((data) => {
             mapElement.dispatchEvent(new CustomEvent("login-succeeded", {
                 detail: DEMO_USERNAME
             }))
             setInterval(updateFreq, 1000000)
+        })
+        .fail((data) => {
+            console.log(data);
         })
     }
     sendCurrentPosition(lat, lon){
@@ -227,7 +230,7 @@ class Server{
         });
         $.ajax({
             type:"POST",
-            url: "http://13.112.165.3:3000/reserve_info",
+            url: "https://13.112.165.3:443/reserve_info",
             dataType: "json",
             contentType: "application/json",
             data: data,
@@ -261,7 +264,7 @@ class Server{
         if(this.reserve_id == null) return;
         $.ajax({
             type:"DELETE",
-            url: "http://13.112.165.3:3000/reserve_info?reserve_id=eq." + this.reserve_id,
+            url: "https://13.112.165.3:443/reserve_info?reserve_id=eq." + this.reserve_id,
             dataType: "json",
             contentType: "application/json",
             beforeSend: function( xhr, settings ) {
