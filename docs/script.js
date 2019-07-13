@@ -207,7 +207,7 @@ class Server{
             setInterval(updateFreq, 1000000)
         })
         .fail((jqXHR, textStatus, errorThrown) => {
-            alert("SSL証明書の設定が完了していない可能性があります。GitHubのREADMEを参照してください");
+            alert("SSL証明書の設定が完了していない可能性があります。GitHubのREADMEで設定方法を参照してください");
             const result = confirm("GitHubのREADMEのページに移動しますか？");
             if(result){
                 window.location.href = "https://github.com/Smart-SE/sse2019-group3";
