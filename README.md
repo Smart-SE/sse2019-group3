@@ -46,4 +46,4 @@
 
 1. これによって、SSL証明書のエラーを無視できるようになります。
 1. [https://smart-se.github.io/sse2019-group3/](https://smart-se.github.io/sse2019-group3/)にアクセスする  
-　　データベースへhttps通信ができるようになります。
+データベースへhttps通信ができるようになります。
