@@ -206,8 +206,12 @@ class Server{
             }))
             setInterval(updateFreq, 1000000)
         })
-        .fail((data) => {
-            console.log(data);
+        .fail((jqXHR, textStatus, errorThrown) => {
+            alert("SSL証明書の設定が完了していない可能性があります。GitHubのREADMEを参照してください");
+            const result = confirm("GitHubのREADMEのページに移動しますか？");
+            if(result){
+                window.location.href = "https://github.com/Smart-SE/sse2019-group3";
+            }
         })
     }
     sendCurrentPosition(lat, lon){
