@@ -9,7 +9,7 @@ const initMap = function(){
     const mymap = L.map(mapid).setView([51.505, -0.09], 16);
     L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery ? <a href="https://www.mapbox.com/">Mapbox</a>',
-        maxZoom: 18,
+        maxZoom: 25,
         id: 'mapbox.streets',
         accessToken: 'pk.eyJ1Ijoic2F0b3NoaS1oYXNoaW1vdG8iLCJhIjoiY2p4Y2pkcTE4MDQyZzN1bzl4amg5eXZjdyJ9.f7wdt7KnSc3nUmH91yuzuw'
     }).addTo(mymap);
