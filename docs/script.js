@@ -204,7 +204,7 @@ class Server{
             mapElement.dispatchEvent(new CustomEvent("login-succeeded", {
                 detail: DEMO_USERNAME
             }))
-            setInterval(updateFreq, 1000000)
+            setInterval(updateFreq, 10000)
         })
         .fail((jqXHR, textStatus, errorThrown) => {
             alert("SSL証明書の設定が完了していない可能性があります。GitHubのREADMEで設定方法を参照してください");
