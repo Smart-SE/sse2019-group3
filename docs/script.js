@@ -220,9 +220,7 @@ class Server{
     reserve(id, lat, lon){
         if(this.reserve_id != null){
             alert("二つ以上予約できません");
-            mapElement.dispatchEvent(new CustomEvent("reserve-failed", {
-                detail: {}
-            }));
+            mapElement.dispatchEvent(new CustomEvent("reserve-failed"));
             return;
         }
         this.tid = +id;
@@ -278,9 +276,11 @@ class Server{
         }).
         done((data) => {
             this.reserve_id = null;
-            mapElement.dispatchEvent(new CustomEvent("remove-reservation-succeeded", {
-                detail: {}
-            }))
+            mapElement.dispatchEvent(new CustomEvent("remove-reservation-succeeded"));
+        })
+        .fail((data) => {
+            this.reserve_id = null;
+            mapElement.dispatchEvent(new CustomEvent("remove-reservation-succeeded"));
         })
     }
 };
@@ -312,6 +312,13 @@ $deReserveButton.on("click", function(){
         server.removeReservation();
     }
 })
+mapElement.addEventListener("remove-reservation-failed", function(e){
+    confirm("既に予約がありません");
+    mymap.closePopup();
+    mymap.removeControl(routing);
+    $displayQRButton.removeClass("btn-primary").addClass("btn-secondary").attr("disabled", "disabled");
+    $deReserveButton.removeClass("btn-primary").addClass("btn-secondary").attr("disabled", "disabled");
+});
 
 mapElement.addEventListener("remove-reservation-succeeded", function(e){
     confirm("予約解除しました");
@@ -353,7 +360,6 @@ mapElement.addEventListener("reserve-succeeded", function(e){
     $('#reserveSucceededModal').modal();
     $displayQRButton.removeClass("btn-secondary").addClass("btn-primary").removeAttr("disabled");
     $deReserveButton.removeClass("btn-secondary").addClass("btn-primary").removeAttr("disabled");
-
 });
 mapElement.addEventListener("reserve-clicked", function(e){
     const result = confirm("予約しますか？");
